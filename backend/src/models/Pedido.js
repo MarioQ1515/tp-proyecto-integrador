@@ -13,7 +13,7 @@ const pedidoSchema = new Schema({
   fechaPedido:       { type: Date, default: Date.now },
   total:             { type: Number, required: true },
   direccionEntrega:  { type: String, required: true },
-  estado:            { type: String, enum: ['pendiente', 'confirmado', 'cancelado'], default: 'pendiente' }
+  estado:            { type: String, enum: ['pendiente', 'confirmado', 'enviado', 'entregado', 'cancelado'], default: 'pendiente' }
 });
 
 module.exports = model('Pedido', pedidoSchema);

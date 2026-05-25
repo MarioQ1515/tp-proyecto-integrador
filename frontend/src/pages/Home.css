@@ -1,0 +1,164 @@
+.home {
+  background: #fff;
+}
+
+/* ── HERO ── */
+.hero {
+  background: #f3f4f6;
+  padding: 80px 64px;
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.hero-inner {
+  max-width: 500px;
+}
+
+.hero-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-logo-img {
+  width: 320px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.hero-title {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+.hero-desc {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.hero-btns {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── SECCIÓN ── */
+.home-section {
+  padding: 52px 64px;
+}
+
+.home-section-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #111827;
+  margin-bottom: 24px;
+}
+
+/* ── CATEGORÍAS ── */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 14px;
+}
+
+.cat-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 24px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cat-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
+}
+
+.cat-card svg {
+  color: #374151;
+}
+
+.cat-card span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1080px) {
+  .hero-logo-img {
+    width: 240px;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    padding: 48px 24px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .hero-logo {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .hero-logo-img {
+    width: 200px;
+  }
+  .hero-title {
+    font-size: 36px;
+  }
+  .home-section {
+    padding: 36px 24px;
+  }
+  .categories-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: auto;
+    padding: 40px 18px;
+  }
+  .hero-logo-img {
+    width: 160px;
+  }
+  .hero-title {
+    font-size: 34px;
+    letter-spacing: 0;
+  }
+  .hero-desc {
+    margin-bottom: 24px;
+  }
+  .home-section {
+    padding: 32px 18px;
+  }
+  .categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  .hero-logo-img {
+    width: 130px;
+  }
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+}

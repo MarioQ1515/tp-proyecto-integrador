@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node backend/src/app.js",
     "dev": "nodemon backend/src/app.js",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

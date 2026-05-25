@@ -1,53 +1,126 @@
+const mongoose = require('mongoose');
 const Pedido = require('../models/Pedido');
 const Carrito = require('../models/Carrito');
 const Producto = require('../models/Producto');
 
+const soportaTransacciones = () => {
+  const topologyType = mongoose.connection.client?.topology?.description?.type;
+  return ['ReplicaSetWithPrimary', 'Sharded', 'LoadBalanced'].includes(topologyType);
+};
+
+const datosPedidoDesdeCarrito = (carrito, usuarioId, direccionEntrega) => ({
+  usuarioId,
+  items: carrito.items.map(item => ({
+    productoId: item.productoId,
+    cantidad: item.cantidad,
+    precioUnitario: item.precioUnitario,
+    subtotal: item.subtotal
+  })),
+  total: carrito.total,
+  direccionEntrega,
+  estado: 'pendiente'
+});
+
+const descontarStock = async (items, options = {}) => {
+  const descontados = [];
+
+  try {
+    for (const item of items) {
+      const actualizado = await Producto.findOneAndUpdate(
+        { _id: item.productoId, stock: { $gte: item.cantidad } },
+        { $inc: { stock: -item.cantidad } },
+        options
+      );
+
+      if (!actualizado) {
+        const err = new Error('Stock insuficiente para uno o más productos');
+        err.status = 400;
+        throw err;
+      }
+
+      descontados.push(item);
+    }
+  } catch (error) {
+    if (!options.session && descontados.length > 0) {
+      await Promise.all(descontados.map(item =>
+        Producto.findByIdAndUpdate(item.productoId, { $inc: { stock: item.cantidad } })
+      ));
+    }
+    throw error;
+  }
+};
+
+const crearPedidoConTransaccion = async (carrito, usuarioId, direccionEntrega) => {
+  const session = await mongoose.startSession();
+
+  try {
+    let pedido;
+    await session.withTransaction(async () => {
+      await descontarStock(carrito.items, { session });
+
+      [pedido] = await Pedido.create(
+        [datosPedidoDesdeCarrito(carrito, usuarioId, direccionEntrega)],
+        { session }
+      );
+
+      carrito.estado = 'completado';
+      await carrito.save({ session });
+    });
+    return pedido;
+  } finally {
+    session.endSession();
+  }
+};
+
+const crearPedidoSinTransaccion = async (carrito, usuarioId, direccionEntrega) => {
+  await descontarStock(carrito.items);
+
+  let pedido;
+  try {
+    pedido = await Pedido.create(datosPedidoDesdeCarrito(carrito, usuarioId, direccionEntrega));
+    carrito.estado = 'completado';
+    await carrito.save();
+    return pedido;
+  } catch (error) {
+    if (pedido) {
+      await Pedido.findByIdAndDelete(pedido._id);
+    }
+    await Promise.all(carrito.items.map(item =>
+      Producto.findByIdAndUpdate(item.productoId, { $inc: { stock: item.cantidad } })
+    ));
+    throw error;
+  }
+};
+
 // POST /api/pedidos
 // Body: { direccionEntrega }
 const crearPedido = async (req, res) => {
+  const { direccionEntrega } = req.body;
+
+  if (!direccionEntrega || typeof direccionEntrega !== 'string' || direccionEntrega.trim().length === 0) {
+    return res.status(400).json({ mensaje: 'La dirección de entrega es obligatoria' });
+  }
+
+  let carrito;
   try {
-    const { direccionEntrega } = req.body;
-
-    if (!direccionEntrega || typeof direccionEntrega !== 'string' || direccionEntrega.trim().length === 0) {
-      return res.status(400).json({ mensaje: 'La dirección de entrega es obligatoria' });
-    }
-
-    const carrito = await Carrito.findOne({ usuarioId: req.usuarioId, estado: 'activo' });
-
+    carrito = await Carrito.findOne({ usuarioId: req.usuarioId, estado: 'activo' });
     if (!carrito || carrito.items.length === 0) {
       return res.status(400).json({ mensaje: 'El carrito está vacío' });
     }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ mensaje: 'Error al procesar el pedido', error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor' });
+  }
 
-    // Descuenta stock de forma atómica por cada item; rollback si alguno falla
-    const decrementados = [];
-    for (const item of carrito.items) {
-      const actualizado = await Producto.findOneAndUpdate(
-        { _id: item.productoId, stock: { $gte: item.cantidad } },
-        { $inc: { stock: -item.cantidad } }
-      );
-      if (!actualizado) {
-        for (const dec of decrementados) {
-          await Producto.findByIdAndUpdate(dec.productoId, { $inc: { stock: dec.cantidad } });
-        }
-        return res.status(400).json({ mensaje: 'Stock insuficiente para uno o más productos' });
-      }
-      decrementados.push({ productoId: item.productoId, cantidad: item.cantidad });
-    }
-
-    const pedido = await Pedido.create({
-      usuarioId: req.usuarioId,
-      items: carrito.items,
-      total: carrito.total,
-      direccionEntrega,
-      estado: 'pendiente'
-    });
-
-    // Marca el carrito como completado
-    carrito.estado = 'completado';
-    await carrito.save();
-
+  try {
+    const pedido = soportaTransacciones()
+      ? await crearPedidoConTransaccion(carrito, req.usuarioId, direccionEntrega)
+      : await crearPedidoSinTransaccion(carrito, req.usuarioId, direccionEntrega);
     res.status(201).json({ mensaje: 'Pedido creado correctamente', pedido });
   } catch (error) {
+    if (error.status === 400) {
+      return res.status(400).json({ mensaje: error.message });
+    }
     console.error(error);
     res.status(500).json({ mensaje: 'Error al crear pedido', error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor' });
   }
@@ -65,7 +138,11 @@ const listarPedidos = async (req, res) => {
 
     const [pedidos, total] = await Promise.all([
       Pedido.find(filtro)
-        .populate('items.productoId', 'nombre precio')
+        .populate({
+          path: 'items.productoId',
+          select: 'nombre precio categoriaId',
+          populate: { path: 'categoriaId', select: 'nombre' }
+        })
         .sort({ fechaPedido: -1 })
         .skip(skip)
         .limit(limit),
@@ -109,7 +186,7 @@ const obtenerPedido = async (req, res) => {
 const actualizarEstadoPedido = async (req, res) => {
   try {
     const { estado } = req.body;
-    const ESTADOS_VALIDOS = ['pendiente', 'confirmado', 'cancelado'];
+    const ESTADOS_VALIDOS = ['pendiente', 'confirmado', 'enviado', 'entregado', 'cancelado'];
 
     if (!estado || !ESTADOS_VALIDOS.includes(estado)) {
       return res.status(400).json({ mensaje: `El estado debe ser uno de: ${ESTADOS_VALIDOS.join(', ')}` });

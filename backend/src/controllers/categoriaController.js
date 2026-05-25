@@ -4,7 +4,7 @@ const Categoria = require('../models/Categoria');
 const listarCategorias = async (req, res) => {
   try {
     const categorias = await Categoria.find({ estado: 'activo' });
-    res.json(categorias);
+    res.json({ categorias });
   } catch (error) {
     console.error(error);
     const errorMsg = process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor';
@@ -36,9 +36,14 @@ const crearCategoria = async (req, res) => {
 const actualizarCategoria = async (req, res) => {
   try {
     const { nombre, descripcion, estado } = req.body;
+    const cambios = {};
+    if (nombre      !== undefined) cambios.nombre      = nombre;
+    if (descripcion !== undefined) cambios.descripcion = descripcion;
+    if (estado      !== undefined) cambios.estado      = estado;
+
     const categoria = await Categoria.findByIdAndUpdate(
       req.params.id,
-      { nombre, descripcion, estado },
+      cambios,
       { new: true, runValidators: true }
     );
     if (!categoria) {

@@ -1,6 +1,6 @@
-# Tienda Informática — API REST
+# Tienda Informática — Full Stack
 
-Backend de una tienda de productos informáticos desarrollado con **Node.js**, **Express** y **MongoDB**. Incluye autenticación con JWT, control de roles, gestión de catálogo, carrito de compras y pedidos.
+Tienda de productos informáticos desarrollada con **Vue**, **Node.js**, **Express** y **MongoDB**. Incluye autenticación con JWT, catálogo, carrito de compras, pedidos y documentación Swagger.
 
 ---
 
@@ -8,6 +8,8 @@ Backend de una tienda de productos informáticos desarrollado con **Node.js**, *
 
 - Node.js + Express 5
 - MongoDB + Mongoose
+- Vue 3 + Vite
+- Vue Router
 - JSON Web Tokens (JWT)
 - bcryptjs
 - Swagger UI
@@ -33,15 +35,21 @@ Backend de una tienda de productos informáticos desarrollado con **Node.js**, *
 git clone https://github.com/MarioQ1515/tp-proyecto-integrador.git
 cd tp-proyecto-integrador
 
-# Instalar dependencias
+# Instalar dependencias del backend
 npm install
+
+# Instalar dependencias del frontend
+npm --prefix frontend install
 
 # Configurar variables de entorno
 cp backend/.env.example backend/.env
 # Editar backend/.env con tus credenciales de MongoDB y JWT_SECRET
 
-# Iniciar en modo desarrollo
+# Iniciar backend en modo desarrollo
 npm run dev
+
+# En otra terminal, iniciar frontend
+npm run frontend:dev
 ```
 
 ---
@@ -61,9 +69,13 @@ NODE_ENV=development
 
 ## Documentación de la API
 
-Con el servidor corriendo, la documentación Swagger está disponible en:
+Con el backend corriendo, la documentación Swagger está disponible en:
 
 [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
+
+El frontend de desarrollo está disponible en:
+
+[http://localhost:5173](http://localhost:5173)
 
 ---
 
@@ -143,4 +155,18 @@ backend/
         ├── categoriaRoutes.js
         ├── pedidoRoutes.js
         └── productoRoutes.js
+frontend/
+└── src/
+    ├── components/
+    ├── pages/
+    ├── router/
+    ├── utils/
+    ├── App.vue
+    └── main.js
 ```
+
+---
+
+## Notas de MongoDB
+
+La creación de pedidos usa transacciones cuando MongoDB corre como replica set o Atlas. Si se usa MongoDB local standalone, el backend usa un flujo compatible con rollback manual de stock para que el checkout funcione durante desarrollo.

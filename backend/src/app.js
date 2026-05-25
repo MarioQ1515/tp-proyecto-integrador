@@ -13,7 +13,19 @@ const pedidoRoutes    = require('./routes/pedidoRoutes');
 const app = express();
 
 // Middlewares globales
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5174',
+      'http://127.0.0.1:5175',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ];
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json({ limit: '1mb' }));
 
 // Documentación Swagger
@@ -52,8 +64,12 @@ app.use('/api/pedidos',    pedidoRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`Documentación Swagger: http://localhost:${PORT}/api/docs`);
-  conectarDB();
-});
+const start = async () => {
+  await conectarDB();
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Documentación Swagger: http://localhost:${PORT}/api/docs`);
+  });
+};
+
+start();

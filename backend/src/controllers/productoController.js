@@ -1,4 +1,5 @@
 const Producto = require('../models/Producto');
+const Categoria = require('../models/Categoria');
 
 // GET /api/productos
 
@@ -64,7 +65,6 @@ const crearProducto = async (req, res) => {
       return res.status(400).json({ mensaje: 'categoriaId, nombre, precio y stock son requeridos' });
     }
 
-    const Categoria = require('../models/Categoria');
     const categoriaExiste = await Categoria.findById(categoriaId);
     if (!categoriaExiste) {
       return res.status(400).json({ mensaje: 'La categoría especificada no existe' });

@@ -1,0 +1,609 @@
+{
+  "info": {
+    "name": "Tienda Informática API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000/api" },
+    { "key": "token_usuario", "value": "" },
+    { "key": "token_admin", "value": "" },
+    { "key": "categoria_id", "value": "" },
+    { "key": "producto_id", "value": "" },
+    { "key": "item_id", "value": "" },
+    { "key": "pedido_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Registro usuario ✅",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/registro",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Perez\",\n  \"email\": \"juan@test.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registro email duplicado ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/registro",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Perez\",\n  \"email\": \"juan@test.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Registro sin campos obligatorios ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/registro",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"incompleto@test.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login usuario ✅",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) pm.collectionVariables.set('token_usuario', res.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@test.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login admin ✅",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) pm.collectionVariables.set('token_admin', res.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login password incorrecta ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@test.com\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Perfil usuario ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/auth/perfil"
+          }
+        },
+        {
+          "name": "Perfil sin token ❌",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/auth/perfil"
+          }
+        },
+        {
+          "name": "Listar usuarios (admin) ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": {
+              "raw": "{{base_url}}/auth/usuarios?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar usuarios sin ser admin ❌",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/auth/usuarios"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Categorías",
+      "item": [
+        {
+          "name": "Listar categorías (público) ✅",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/categorias"
+          }
+        },
+        {
+          "name": "Crear categoría (admin) ✅",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res._id) pm.collectionVariables.set('categoria_id', res._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/categorias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Procesadores\",\n  \"descripcion\": \"CPUs de escritorio y laptop\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear categoría nombre duplicado ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/categorias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Procesadores\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear categoría sin token ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/categorias",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sin auth\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar categoría ✅",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/categorias/{{categoria_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Procesadores y CPUs\",\n  \"descripcion\": \"Procesadores para PC y notebook\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar categoría (soft-delete) ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": "{{base_url}}/categorias/{{categoria_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Productos",
+      "item": [
+        {
+          "name": "Listar productos (público) ✅",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/productos?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar productos con filtro nombre ✅",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/productos?nombre=intel",
+              "query": [{ "key": "nombre", "value": "intel" }]
+            }
+          }
+        },
+        {
+          "name": "Crear producto (admin) ✅",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res._id) pm.collectionVariables.set('producto_id', res._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/productos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoriaId\": \"{{categoria_id}}\",\n  \"nombre\": \"Intel Core i7-12700K\",\n  \"descripcion\": \"Procesador de 12 núcleos\",\n  \"precio\": 35000,\n  \"stock\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear producto categoría inexistente ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/productos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoriaId\": \"000000000000000000000000\",\n  \"nombre\": \"Producto sin categoría\",\n  \"precio\": 100,\n  \"stock\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear producto sin campos obligatorios ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/productos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Solo nombre\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Obtener producto por ID ✅",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/productos/{{producto_id}}"
+          }
+        },
+        {
+          "name": "Obtener producto ID inválido ❌",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/productos/id-invalido"
+          }
+        },
+        {
+          "name": "Actualizar producto ✅",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/productos/{{producto_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 32000,\n  \"stock\": 15\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar producto (soft-delete) ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": "{{base_url}}/productos/{{producto_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Carrito",
+      "item": [
+        {
+          "name": "Obtener carrito ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/carrito"
+          }
+        },
+        {
+          "name": "Agregar item al carrito ✅",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.items && res.items.length > 0) pm.collectionVariables.set('item_id', res.items[0]._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/carrito/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{producto_id}}\",\n  \"cantidad\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Agregar item stock insuficiente ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/carrito/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{producto_id}}\",\n  \"cantidad\": 9999\n}"
+            }
+          }
+        },
+        {
+          "name": "Agregar item sin productoId ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/carrito/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Agregar item sin token ❌",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/carrito/items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{producto_id}}\",\n  \"cantidad\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar cantidad de item ✅",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/carrito/items/{{item_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar item del carrito ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/carrito/items/{{item_id}}"
+          }
+        },
+        {
+          "name": "Vaciar carrito ✅",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/carrito"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Pedidos",
+      "item": [
+        {
+          "name": "Crear pedido ✅",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.pedido && res.pedido._id) pm.collectionVariables.set('pedido_id', res.pedido._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccionEntrega\": \"Av. Corrientes 1234, CABA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear pedido carrito vacío ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccionEntrega\": \"Av. Corrientes 1234, CABA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Crear pedido sin dirección ❌",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_usuario}}" }
+            ],
+            "url": "{{base_url}}/pedidos",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "Listar mis pedidos ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": {
+              "raw": "{{base_url}}/pedidos?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener pedido por ID ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/pedidos/{{pedido_id}}"
+          }
+        },
+        {
+          "name": "Listar todos los pedidos (admin) ✅",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_admin}}" }],
+            "url": {
+              "raw": "{{base_url}}/pedidos/admin/todos?page=1&limit=10",
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar todos los pedidos sin ser admin ❌",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_usuario}}" }],
+            "url": "{{base_url}}/pedidos/admin/todos"
+          }
+        },
+        {
+          "name": "Actualizar estado pedido (admin) ✅",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/pedidos/{{pedido_id}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"confirmado\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Actualizar estado inválido ❌",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_admin}}" }
+            ],
+            "url": "{{base_url}}/pedidos/{{pedido_id}}/estado",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"enviado\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
