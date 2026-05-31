@@ -32,3 +32,8 @@ build/
 
 # Claude Code
 .claude/
+
+# Mockups y colecciones Postman
+mockups.html
+.mockups.html
+*.postman_collection.json
